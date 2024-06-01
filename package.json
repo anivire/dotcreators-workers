@@ -1,0 +1,27 @@
+{
+  "name": "dotcreators-workers",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:prisma-create": "bunx prisma init",
+    "dev:prisma": "bunx prisma db pull && bunx prisma generate"
+  },
+  "author": "anivire",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^5.14.0",
+    "@the-convocation/twitter-scraper": "^0.12.0",
+    "@types/node": "^20.13.0",
+    "@types/node-cron": "^3.0.11",
+    "node-cron": "^3.0.3",
+    "prisma": "^5.14.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "devDependencies": {
+    "eslint": "^9.4.0"
+  }
+}
