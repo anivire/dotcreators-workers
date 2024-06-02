@@ -78,23 +78,42 @@ export class SupabaseService {
   async updateArtistProfiles(artistData: Profile[]) {
     try {
       let artistsProfileUpdate = artistData.map(async artist => {
-        // // Получаем предыдущие записи по подписчикам
-        // const previousTrending = await this.prisma.artistTrending.findFirst({
-        //   where: { userId: artist.userId },
-        //   orderBy: { recordedAt: 'desc' },
-        // });
+        const last7DaysTrending = await this.prisma.artistTrending.findMany({
+          where: {
+            userId: artist.userId,
+            recordedAt: {
+              gte: new Date(new Date().setDate(new Date().getDate() - 7)),
+            },
+          },
+          orderBy: {
+            recordedAt: 'desc',
+          },
+        });
 
-        // // Рассчитываем тренд роста подписчиков за неделю
-        // let weeklyFollowersGrowingTrend = 0;
-        // if (previousTrending) {
-        //   const previousFollowersCount = previousTrending.followersCount;
-        //   const followersDifference =
-        //     artist.followersCount! - previousFollowersCount;
-        //   weeklyFollowersGrowingTrend =
-        //     (followersDifference / previousFollowersCount) * 100;
-        // }
+        let weeklyFollowersGrowingTrend = 0;
+        let weeklyPostsGrowingTrend = 0;
+        if (last7DaysTrending.length > 0) {
+          const initialFollowersCount =
+            last7DaysTrending[last7DaysTrending.length - 1]!.followersCount;
+          const initialTweetsCount =
+            last7DaysTrending[last7DaysTrending.length - 1]!.tweetsCount;
+          const latestFollowersCount = artist.followersCount!;
+          const latestTweetsCount = artist.tweetsCount!;
 
-        // Обновляем данные артиста
+          if (initialFollowersCount > 0) {
+            const followersDifference =
+              latestFollowersCount - initialFollowersCount;
+            weeklyFollowersGrowingTrend =
+              (followersDifference / initialFollowersCount) * 100;
+          }
+
+          if (initialTweetsCount > 0) {
+            const tweetsDifference = latestTweetsCount - initialTweetsCount;
+            weeklyPostsGrowingTrend =
+              (tweetsDifference / initialTweetsCount) * 100;
+          }
+        }
+
         return this.prisma.artist.update({
           where: { userId: artist.userId },
           data: {
@@ -109,7 +128,12 @@ export class SupabaseService {
             name: artist.name,
             lastUpdatedAt: new Date(),
             url: artist.url,
-            // weeklyFollowersGrowingTrend: weeklyFollowersGrowingTrend,
+            weeklyFollowersGrowingTrend: parseFloat(
+              weeklyFollowersGrowingTrend.toFixed(3)
+            ),
+            weeklyPostsGrowingTrend: parseFloat(
+              weeklyPostsGrowingTrend.toFixed(3)
+            ),
           },
         });
       });
