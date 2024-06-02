@@ -1,8 +1,9 @@
 import cron from 'node-cron';
-import { logger } from './utils';
+import { logger } from '../utils';
 import { SupabaseService } from './supabaseService';
 import { TwitterService } from './twitterService';
 import { Profile } from '@the-convocation/twitter-scraper';
+import { sendDiscordMessage } from './webhookService';
 
 const EVERY_HOURS = 24;
 const RUN_ON_INIT = false;
@@ -62,9 +63,17 @@ export function cronUpdateStats() {
         try {
           await supabase.updateArtistProfiles(artistsNewData);
           logger(`Successfully updated ${artistsNewData.length} profiles.`);
+          sendDiscordMessage(
+            'Update user profiles and trends',
+            `Successfully updated ${artistsNewData.length} profiles`
+          );
           artistsNewData = [];
         } catch (error) {
-          logger(`Error updating profiles: ${error}`);
+          logger(`Error while updating profiles: ${error}`);
+          sendDiscordMessage(
+            'Error while updating profiles',
+            error as unknown as string
+          );
         }
       } else {
         logger('No new artist data to update.');
@@ -88,7 +97,10 @@ export function cronFetchArtistSuggestion() {
       if (artistsSuggestions) {
         if (artistsSuggestions.length === 0) {
           logger(`Recieved 0 artist suggestions, skip fetching.`);
-
+          sendDiscordMessage(
+            'Artists suggestions',
+            'Recieved 0 artist suggestions, skip fetching'
+          );
           return;
         }
 
