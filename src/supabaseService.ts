@@ -126,7 +126,7 @@ export class SupabaseService {
             bio: artist.biography,
             website: artist.website,
             name: artist.name,
-            lastUpdatedAt: new Date(),
+            lastUpdatedAt: new Date().toISOString(),
             url: artist.url,
             weeklyFollowersGrowingTrend: parseFloat(
               weeklyFollowersGrowingTrend.toFixed(3)
@@ -143,7 +143,7 @@ export class SupabaseService {
           data: {
             followersCount: artist.followersCount!,
             tweetsCount: artist.tweetsCount!,
-            recordedAt: new Date(),
+            recordedAt: new Date().toISOString(),
             userId: artist.userId!,
           },
         });
