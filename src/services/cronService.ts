@@ -6,7 +6,7 @@ import { Profile } from '@the-convocation/twitter-scraper';
 import { sendDiscordMessage } from './webhookService';
 
 const EVERY_HOURS = 24;
-const RUN_ON_INIT = false;
+const RUN_ON_INIT = (process.env.DEV as unknown as boolean) ?? false;
 
 const supabase = new SupabaseService();
 const twitter = new TwitterService();
