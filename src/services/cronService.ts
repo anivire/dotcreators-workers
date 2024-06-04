@@ -96,72 +96,83 @@ export function cronFetchArtistSuggestion() {
 
       if (artistsSuggestions) {
         if (artistsSuggestions.length === 0) {
-          logger(`Recieved 0 artist suggestions, skip fetching.`);
+          logger(`Received 0 artist suggestions, skip fetching.`);
           sendDiscordMessage(
             'Artists suggestions',
-            'Recieved 0 artist suggestions, skip fetching'
+            'Received 0 artist suggestions, skip fetching'
           );
           return;
         }
 
         logger(
-          `Recieved ${artistsSuggestions.length} artist suggestion(s), start fetching twitter data.`
+          `Received ${artistsSuggestions.length} artist suggestion(s), start fetching twitter data.`
         );
 
-        artistsSuggestions.map(async (artist, index) => {
+        // const artistsNewData: Profile[] = [];
+        for (const [index, artist] of artistsSuggestions.entries()) {
           logger(
             `[${index + 1}/${
               artistsSuggestions.length
             }] Start fetching twitter data for ${artist.username}...`
           );
-          let artistData = await twitter.getTwitterProfile(artist.username);
-          if (artistData) {
-            logger(
-              `[${index + 1}/${artistsSuggestions.length}] Data fetched for ${
-                artist.username
-              }, creating profile...`
-            );
-            let isProfileCreated = await supabase.createArtistInstance({
-              tags: artist.tags,
-              country: artist.country,
-              bio: artistData.biography || null,
-              followersCount: artistData.followersCount || 0,
-              tweetsCount: artistData.tweetsCount || 0,
-              images: {
-                avatar: artistData.avatar || null,
-                banner: artistData.banner || null,
-              },
-              name: artistData.name || null,
-              url: artistData.url || 'https://x.com/' + artistData.username,
-              website: artistData.website || null,
-              joinedAt: new Date(artistData.joined!) || null,
-              username: artistData.username!,
-              userId: artistData.userId!,
-              lastUpdatedAt: new Date(),
-              createdAt: new Date(),
-              weeklyFollowersGrowingTrend: 0,
-              weeklyPostsGrowingTrend: 0,
-            });
-
-            if (isProfileCreated) {
+          try {
+            const artistData = await twitter.getTwitterProfile(artist.username);
+            if (artistData) {
               logger(
-                `[${index + 1}/${artistsSuggestions.length}] ${
+                `[${index + 1}/${artistsSuggestions.length}] Data fetched for ${
                   artist.username
-                } profile is successfully created!`
+                }, creating profile...`
               );
-              await supabase.updateSuggestionRequestStatus(
-                artist.requestId,
-                'created'
+              let isProfileCreated = await supabase.createArtistInstance(
+                {
+                  tags: artist.tags,
+                  country: artist.country,
+                  bio: artistData.biography || null,
+                  followersCount: artistData.followersCount || 0,
+                  tweetsCount: artistData.tweetsCount || 0,
+                  images: {
+                    avatar: artistData.avatar || null,
+                    banner: artistData.banner || null,
+                  },
+                  name: artistData.name || null,
+                  url: artistData.url || 'https://x.com/' + artistData.username,
+                  website: artistData.website || null,
+                  joinedAt: new Date(artistData.joined!) || null,
+                  username: artistData.username!,
+                  userId: artistData.userId!,
+                  lastUpdatedAt: new Date(),
+                  createdAt: new Date(),
+                  weeklyFollowersGrowingTrend: 0,
+                  weeklyPostsGrowingTrend: 0,
+                },
+                artist.requestId
               );
+
+              if (isProfileCreated) {
+                logger(
+                  `[${index + 1}/${artistsSuggestions.length}] ${
+                    artist.username
+                  } profile is successfully created!`
+                );
+              } else {
+                logger(
+                  `Unable to create profile for ${artist.username}, skipping...`
+                );
+              }
             } else {
               logger(
-                `Unable to create profile for ${artist.username}, skipping...`
+                `Unable to fetch data for ${artist.username}, skipping...`
               );
             }
-          } else {
-            logger(`Unable to fetch data for ${artist.username}, skipping...`);
+          } catch (error) {
+            logger(`Error fetching data for ${artist.username}: ${error}`);
           }
-        });
+        }
+
+        sendDiscordMessage(
+          'Artists suggestions',
+          `Created ${artistsSuggestions.length} new artist suggestions`
+        );
       } else {
         logger(`Unable to fetch profiles, skipping...`);
       }

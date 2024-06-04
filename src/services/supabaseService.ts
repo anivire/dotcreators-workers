@@ -56,7 +56,10 @@ export class SupabaseService {
     }
   }
 
-  async createArtistInstance(artistData: Omit<Artist, 'id'>): Promise<boolean> {
+  async createArtistInstance(
+    artistData: Omit<Artist, 'id'>,
+    requestId: string
+  ): Promise<boolean> {
     try {
       // Преобразование `images` в `InputJsonValue`
       const artistCreateInput: Prisma.ArtistCreateInput = {
@@ -64,8 +67,19 @@ export class SupabaseService {
         images: artistData.images as Prisma.InputJsonValue,
       };
 
-      await this.prisma.artist.create({
-        data: artistCreateInput,
+      await this.prisma.$transaction(async prisma => {
+        await prisma.artist.create({
+          data: artistCreateInput,
+        });
+
+        await prisma.artistSuggestion.update({
+          where: {
+            requestId: requestId,
+          },
+          data: {
+            requestStatus: 'created',
+          },
+        });
       });
 
       return true;
@@ -154,21 +168,6 @@ export class SupabaseService {
       console.log('All artist profiles updated successfully');
     } catch (e) {
       console.log('Error while trying to update artist profiles: ' + e);
-    }
-  }
-
-  async updateSuggestionRequestStatus(requestId: string, status: string) {
-    try {
-      this.prisma.artistSuggestion.update({
-        where: {
-          requestId: requestId,
-        },
-        data: {
-          requestStatus: status,
-        },
-      });
-    } catch (e) {
-      console.log('Error while trying to update suggestion status: ' + e);
     }
   }
 }
