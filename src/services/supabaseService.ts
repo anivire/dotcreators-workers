@@ -170,4 +170,37 @@ export class SupabaseService {
       console.log('Error while trying to update artist profiles: ' + e);
     }
   }
+
+  async updateAnalyticsArtists(totalArtists: number) {
+    try {
+      const totalArtistsRequest = await this.prisma.analyticsArtists.create({
+        data: {
+          totalArtistsCount: totalArtists,
+        },
+      });
+
+      if (totalArtistsRequest) {
+        console.log('Artists analytics records successfully created');
+      }
+    } catch (e) {
+      console.log('Error while trying to create analytics records: ' + e);
+    }
+  }
+
+  async updateAnalyticsSuggestions(totalSuggestions: number) {
+    try {
+      const totalSuggestionsRequest =
+        await this.prisma.analyticsSuggestions.create({
+          data: {
+            totalSuggestionsCount: totalSuggestions,
+          },
+        });
+
+      if (totalSuggestionsRequest) {
+        console.log('Suggestions analytics records successfully created');
+      }
+    } catch (e) {
+      console.log('Error while trying to create analytics records: ' + e);
+    }
+  }
 }

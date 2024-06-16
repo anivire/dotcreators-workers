@@ -58,3 +58,26 @@ model ArtistTrending {
 
   @@map("artistsTrending")
 }
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model dashboardUsers {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  discordId Int      @unique
+  username  String?
+  roles     Json?    @db.Json
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model analyticsArtists {
+  id                BigInt   @id(map: "analyticsartists_pkey") @default(autoincrement())
+  totalArtistsCount Int?
+  recordedAt        DateTime @default(now()) @db.Timestamptz(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model analyticsSuggestions {
+  id                    String   @id(map: "analyticssuggestions_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  totalSuggestionsCount Int?     @default(0)
+  recordedAt            DateTime @default(now()) @db.Timestamptz(6)
+}

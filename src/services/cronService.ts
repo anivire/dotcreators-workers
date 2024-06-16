@@ -6,7 +6,7 @@ import { Profile } from '@the-convocation/twitter-scraper';
 import { sendDiscordMessage } from './webhookService';
 
 const EVERY_HOURS = 24;
-const RUN_ON_INIT = true;
+const RUN_ON_INIT = false;
 
 const supabase = new SupabaseService();
 const twitter = new TwitterService();
@@ -63,6 +63,7 @@ export function cronUpdateStats() {
         try {
           await supabase.updateArtistProfiles(artistsNewData);
           logger(`Successfully updated ${artistsNewData.length} profiles.`);
+          await supabase.updateAnalyticsArtists(artistsNewData.length);
           sendDiscordMessage(
             'Update user profiles and trends',
             `Successfully updated ${artistsNewData.length} profiles`
@@ -108,7 +109,6 @@ export function cronFetchArtistSuggestion() {
           `Received ${artistsSuggestions.length} artist suggestion(s), start fetching twitter data.`
         );
 
-        // const artistsNewData: Profile[] = [];
         for (const [index, artist] of artistsSuggestions.entries()) {
           logger(
             `[${index + 1}/${
@@ -169,6 +169,7 @@ export function cronFetchArtistSuggestion() {
           }
         }
 
+        await supabase.updateAnalyticsSuggestions(artistsSuggestions.length);
         sendDiscordMessage(
           'Artists suggestions',
           `Created ${artistsSuggestions.length} new artist suggestions`
