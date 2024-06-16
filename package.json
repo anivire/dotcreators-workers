@@ -16,6 +16,7 @@
     "@the-convocation/twitter-scraper": "^0.12.0",
     "@types/node": "^20.13.0",
     "@types/node-cron": "^3.0.11",
+    "axios": "^1.7.2",
     "discord-ts-webhook": "^1.2.1",
     "discord-webhook-node": "^1.1.8",
     "install": "^0.13.0",
