@@ -31,13 +31,6 @@ export class TwitterService {
       }
     }
 
-    console.log(profile);
-
     return profile;
   }
-}
-
-export async function test() {
-  const t = new TwitterService();
-  console.log(await t.getTwitterProfile('violxiv'));
 }
