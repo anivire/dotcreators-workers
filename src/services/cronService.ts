@@ -5,8 +5,9 @@ import { TwitterService } from './twitterService';
 import { Profile } from '@the-convocation/twitter-scraper';
 import { sendDiscordMessage } from './webhookService';
 
+const IS_RUN_ON_INIT = process.env.RUN_ON_INIT as unknown as boolean;
 const EVERY_HOURS = 24;
-const RUN_ON_INIT = false;
+const RUN_ON_INIT = IS_RUN_ON_INIT;
 
 const supabase = new SupabaseService();
 const twitter = new TwitterService();
