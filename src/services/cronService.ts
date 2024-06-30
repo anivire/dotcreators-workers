@@ -97,8 +97,8 @@ export function cronUpdateStats() {
       if (artistsNewData.length > 0) {
         logger(`Updating ${artistsNewData.length} profiles...`);
         try {
-          // await supabase.updateArtistProfiles(artistsNewData);
-          // await supabase.updateAnalyticsArtists(artistsNewData.length);
+          await supabase.updateArtistProfiles(artistsNewData);
+          await supabase.updateAnalyticsArtists(artistsNewData.length);
           logger(`Successfully updated ${artistsNewData.length} profiles.`);
           sendDiscordMessage(
             'Update user profiles and trends',
