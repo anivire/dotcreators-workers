@@ -1,5 +1,5 @@
 import { Profile, Scraper } from '@the-convocation/twitter-scraper';
-import { getOriginalUrl } from '../utils';
+import { getOriginalUrl, logger } from '../utils';
 
 export class TwitterService {
   private readonly scraper = new Scraper();
