@@ -27,37 +27,6 @@ export function cronUpdateStats() {
           page
         );
 
-        // if (artistsProfiles && artistsProfiles.data.length > 0) {
-        //   for (const [index, artist] of artistsProfiles.data.entries()) {
-        //     logger(
-        //       `[${index + 1}/${
-        //         artistsProfiles.data.length
-        //       }] Start fetching twitter data for ${artist.username}...`
-        //     );
-
-        //     try {
-        //       const artistData = await twitter.getTwitterProfile(
-        //         artist.username
-        //       );
-        //       if (artistData) {
-        //         artistsNewData.push(artistData);
-        //         logger(
-        //           `[${index + 1}/${
-        //             artistsProfiles.data.length
-        //           }] Data fetched for ${
-        //             artist.username
-        //           }, added to profile update queue.`
-        //         );
-        //       }
-        //     } catch (error) {
-        //       logger(`Error fetching data for ${artist.username}: ${error}`);
-        //     }
-        //   }
-
-        //   page++;
-        // } else {
-        //   morePages = false;
-        // }
         if (artistsProfiles && artistsProfiles.data.length > 0) {
           const fetchPromises = artistsProfiles.data.map(
             async (artist, index) => {
@@ -81,8 +50,17 @@ export function cronUpdateStats() {
                     }, added to profile update queue.`
                   );
                 }
-              } catch (error) {
-                logger(`Error fetching data for ${artist.username}: ${error}`);
+              } catch (e) {
+                logger(`Error fetching data for ${artist.username}: ${e}`);
+                if (e instanceof Error) {
+                  sendDiscordMessage(
+                    e.name,
+                    `${e.message}\n\n\`username: ${artist.username}\``,
+                    'error'
+                  );
+                } else {
+                  sendDiscordMessage('UnknownError', `${e}`, 'error');
+                }
               }
             }
           );
@@ -102,15 +80,21 @@ export function cronUpdateStats() {
           logger(`Successfully updated ${artistsNewData.length} profiles.`);
           sendDiscordMessage(
             'Update user profiles and trends',
-            `Successfully updated ${artistsNewData.length} profiles`
+            `Successfully updated ${artistsNewData.length} profiles`,
+            'info'
           );
           artistsNewData = [];
-        } catch (error) {
-          logger(`Error while updating profiles: ${error}`);
-          sendDiscordMessage(
-            'Error while updating profiles',
-            error as unknown as string
-          );
+        } catch (e) {
+          logger(`Error while updating profiles: ${e}`);
+          if (e instanceof Error) {
+            sendDiscordMessage(
+              'Error while updating profiles',
+              `${e.message}`,
+              'error'
+            );
+          } else {
+            sendDiscordMessage('UnknownError', `${e}`, 'error');
+          }
         }
       } else {
         logger('No new artist data to update.');
@@ -136,7 +120,8 @@ export function cronFetchArtistSuggestion() {
           logger(`Received 0 artist suggestions, skip fetching.`);
           sendDiscordMessage(
             'Artists suggestions',
-            'Received 0 artist suggestions, skip fetching'
+            'Received 0 artist suggestions, skip fetching',
+            'info'
           );
           return;
         }
@@ -145,65 +130,6 @@ export function cronFetchArtistSuggestion() {
           `Received ${artistsSuggestions.length} artist suggestion(s), start fetching twitter data.`
         );
 
-        // for (const [index, artist] of artistsSuggestions.entries()) {
-        //   logger(
-        //     `[${index + 1}/${
-        //       artistsSuggestions.length
-        //     }] Start fetching twitter data for ${artist.username}...`
-        //   );
-        //   try {
-        //     const artistData = await twitter.getTwitterProfile(artist.username);
-        //     if (artistData) {
-        //       logger(
-        //         `[${index + 1}/${artistsSuggestions.length}] Data fetched for ${
-        //           artist.username
-        //         }, creating profile...`
-        //       );
-        //       let isProfileCreated = await supabase.createArtistInstance(
-        //         {
-        //           tags: artist.tags,
-        //           country: artist.country,
-        //           bio: artistData.biography || null,
-        //           followersCount: artistData.followersCount || 0,
-        //           tweetsCount: artistData.tweetsCount || 0,
-        //           images: {
-        //             avatar: artistData.avatar || null,
-        //             banner: artistData.banner || null,
-        //           },
-        //           name: artistData.name || null,
-        //           url: artistData.url || 'https://x.com/' + artistData.username,
-        //           website: artistData.website || null,
-        //           joinedAt: new Date(artistData.joined!) || null,
-        //           username: artistData.username!,
-        //           userId: artistData.userId!,
-        //           lastUpdatedAt: new Date(),
-        //           createdAt: new Date(),
-        //           weeklyFollowersGrowingTrend: 0,
-        //           weeklyPostsGrowingTrend: 0,
-        //         },
-        //         artist.requestId
-        //       );
-
-        //       if (isProfileCreated) {
-        //         logger(
-        //           `[${index + 1}/${artistsSuggestions.length}] ${
-        //             artist.username
-        //           } profile is successfully created!`
-        //         );
-        //       } else {
-        //         logger(
-        //           `Unable to create profile for ${artist.username}, skipping...`
-        //         );
-        //       }
-        //     } else {
-        //       logger(
-        //         `Unable to fetch data for ${artist.username}, skipping...`
-        //       );
-        //     }
-        //   } catch (error) {
-        //     logger(`Error fetching data for ${artist.username}: ${error}`);
-        //   }
-        // }
         if (artistsSuggestions && artistsSuggestions.length > 0) {
           const fetchAndCreatePromises = artistsSuggestions.map(
             async (artist, index) => {
@@ -267,8 +193,16 @@ export function cronFetchArtistSuggestion() {
                     `Unable to fetch data for ${artist.username}, skipping...`
                   );
                 }
-              } catch (error) {
-                logger(`Error fetching data for ${artist.username}: ${error}`);
+              } catch (e) {
+                if (e instanceof Error) {
+                  sendDiscordMessage(
+                    e.name,
+                    `${e.message}\n\n\`username: ${artist.username}\``,
+                    'error'
+                  );
+                } else {
+                  sendDiscordMessage('UnknownError', `${e}`, 'error');
+                }
               }
             }
           );
@@ -280,7 +214,8 @@ export function cronFetchArtistSuggestion() {
         await supabase.updateAnalyticsSuggestions(artistsSuggestions.length);
         sendDiscordMessage(
           'Artists suggestions',
-          `Created ${artistsSuggestions.length} new artist suggestions`
+          `Created ${artistsSuggestions.length} new artist suggestions`,
+          'info'
         );
       } else {
         logger(`Unable to fetch profiles, skipping...`);

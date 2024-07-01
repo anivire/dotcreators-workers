@@ -1,204 +1,214 @@
-import { Artist, ArtistSuggestion, Prisma, PrismaClient } from "@prisma/client";
-import { Profile } from "@the-convocation/twitter-scraper";
+import { Artist, ArtistSuggestion, Prisma, PrismaClient } from '@prisma/client';
+import { Profile } from '@the-convocation/twitter-scraper';
 
 export class SupabaseService {
-	private readonly prisma = new PrismaClient();
+  private readonly prisma = new PrismaClient();
 
-	async getArtistsSuggestions(): Promise<
-		Omit<ArtistSuggestion, "avatarUrl" | "requestStatus">[] | undefined
-	> {
-		try {
-			const artistsSuggestions = await this.prisma.artistSuggestion.findMany({
-				where: {
-					requestStatus: "approved",
-				},
-				select: {
-					requestId: true,
-					createdAt: true,
-					username: true,
-					country: true,
-					tags: true,
-				},
-			});
+  async getArtistsSuggestions(): Promise<
+    Omit<ArtistSuggestion, 'avatarUrl' | 'requestStatus'>[] | undefined
+  > {
+    try {
+      const artistsSuggestions = await this.prisma.artistSuggestion.findMany({
+        where: {
+          requestStatus: 'approved',
+        },
+        select: {
+          requestId: true,
+          createdAt: true,
+          username: true,
+          country: true,
+          tags: true,
+        },
+      });
 
-			if (artistsSuggestions) {
-				return artistsSuggestions;
-			}
-			return undefined;
-		} catch (e) {
-			console.log(`Error while trying to fetch artists suggestions list: ${e}`);
-			return undefined;
-		}
-	}
+      if (artistsSuggestions) {
+        return artistsSuggestions;
+      }
+      return undefined;
+    } catch (e) {
+      console.log(`Error while trying to fetch artists suggestions list: ${e}`);
+      return undefined;
+    }
+  }
 
-	async getArtistsProfilesPaginated(
-		page: number,
-	): Promise<{ data: Artist[]; hasNext: boolean } | undefined> {
-		try {
-			const limit = 50;
-			const artistsProfiles = await this.prisma.artist.findMany({
-				take: limit,
-				skip: (page - 1) * limit,
-			});
+  async getArtistsProfilesPaginated(
+    page: number
+  ): Promise<{ data: Artist[]; hasNext: boolean } | undefined> {
+    try {
+      const limit = 50;
+      const artistsProfiles = await this.prisma.artist.findMany({
+        take: limit,
+        skip: (page - 1) * limit,
+      });
 
-			if (artistsProfiles) {
-				return {
-					data: artistsProfiles,
-					hasNext: artistsProfiles.length === limit,
-				};
-			}
-			return undefined;
-		} catch (e) {
-			console.log(`Error while trying to fetch artists profiles list: ${e}`);
-			return undefined;
-		}
-	}
+      if (artistsProfiles) {
+        return {
+          data: artistsProfiles,
+          hasNext: artistsProfiles.length === limit,
+        };
+      }
+      return undefined;
+    } catch (e) {
+      console.log(`Error while trying to fetch artists profiles list: ${e}`);
+      return undefined;
+    }
+  }
 
-	async createArtistInstance(
-		artistData: Omit<Artist, "id">,
-		requestId: string,
-	): Promise<boolean> {
-		try {
-			// Преобразование `images` в `InputJsonValue`
-			const artistCreateInput: Prisma.ArtistCreateInput = {
-				...artistData,
-				images: artistData.images as Prisma.InputJsonValue,
-			};
+  async createArtistInstance(
+    artistData: Omit<Artist, 'id'>,
+    requestId: string
+  ): Promise<boolean> {
+    try {
+      // Преобразование `images` в `InputJsonValue`
+      const artistCreateInput: Prisma.ArtistCreateInput = {
+        ...artistData,
+        images: artistData.images as Prisma.InputJsonValue,
+      };
 
-			await this.prisma.$transaction(async (prisma) => {
-				await prisma.artist.create({
-					data: artistCreateInput,
-				});
+      await this.prisma.$transaction(async prisma => {
+        await prisma.artist.create({
+          data: artistCreateInput,
+        });
 
-				await prisma.artistSuggestion.update({
-					where: {
-						requestId: requestId,
-					},
-					data: {
-						requestStatus: "created",
-					},
-				});
-			});
+        await prisma.artistSuggestion.update({
+          where: {
+            requestId: requestId,
+          },
+          data: {
+            requestStatus: 'created',
+          },
+        });
+      });
 
-			return true;
-		} catch (e) {
-			console.log(`Error while trying to create artist profile: ${e}`);
-			return false;
-		}
-	}
+      return true;
+    } catch (e) {
+      console.log(`Error while trying to create artist profile: ${e}`);
+      return false;
+    }
+  }
 
-	async updateArtistProfiles(artistData: Profile[]) {
-		try {
-			let artistsProfileUpdate = artistData.map(async (artist) => {
-				const last7DaysTrending = await this.prisma.artistTrending.findMany({
-					where: {
-						userId: artist.userId,
-						recordedAt: {
-							gte: new Date(new Date().setDate(new Date().getDate() - 7)),
-						},
-					},
-					orderBy: {
-						recordedAt: "desc",
-					},
-				});
+  async updateArtistProfiles(artistData: Profile[]) {
+    try {
+      let artistsProfileUpdate = artistData.map(async artist => {
+        const last7DaysTrending = await this.prisma.artistTrending.findMany({
+          where: {
+            userId: artist.userId,
+            recordedAt: {
+              gte: new Date(new Date().setDate(new Date().getDate() - 7)),
+            },
+          },
+          orderBy: {
+            recordedAt: 'desc',
+          },
+        });
 
-				let weeklyFollowersGrowingTrend = 0;
-				let weeklyPostsGrowingTrend = 0;
-				if (last7DaysTrending.length > 0) {
-					const initialFollowersCount =
-						last7DaysTrending[last7DaysTrending.length - 1]!.followersCount;
-					const initialTweetsCount =
-						last7DaysTrending[last7DaysTrending.length - 1]!.tweetsCount;
-					const latestFollowersCount = artist.followersCount!;
-					const latestTweetsCount = artist.tweetsCount!;
+        let growthTrend: {
+          followers?: number;
+          posts?: number;
+        } = {};
 
-					if (initialFollowersCount > 0) {
-						const followersDifference =
-							latestFollowersCount - initialFollowersCount;
-						weeklyFollowersGrowingTrend =
-							(followersDifference / initialFollowersCount) * 100;
-					}
+        if (last7DaysTrending.length >= 3) {
+          growthTrend.followers = 0;
+          growthTrend.posts = 0;
 
-					if (initialTweetsCount > 0) {
-						const tweetsDifference = latestTweetsCount - initialTweetsCount;
-						weeklyPostsGrowingTrend =
-							(tweetsDifference / initialTweetsCount) * 100;
-					}
-				}
+          const initialTrend = last7DaysTrending[last7DaysTrending.length - 1];
+          if (
+            initialTrend &&
+            artist.followersCount != null &&
+            artist.tweetsCount != null
+          ) {
+            const initialFollowersCount = initialTrend.followersCount;
+            const initialTweetsCount = initialTrend.tweetsCount;
+            const latestFollowersCount = artist.followersCount;
+            const latestTweetsCount = artist.tweetsCount;
 
-				return this.prisma.artist.update({
-					where: { userId: artist.userId },
-					data: {
-						followersCount: artist.followersCount,
-						tweetsCount: artist.tweetsCount,
-						images: {
-							avatar: artist.avatar,
-							banner: artist.banner,
-						},
-						bio: artist.biography,
-						website: artist.website,
-						name: artist.name,
-						lastUpdatedAt: new Date().toISOString(),
-						url: artist.url,
-						weeklyFollowersGrowingTrend: Number.parseFloat(
-							weeklyFollowersGrowingTrend.toFixed(3),
-						),
-						weeklyPostsGrowingTrend: Number.parseFloat(
-							weeklyPostsGrowingTrend.toFixed(3),
-						),
-					},
-				});
-			});
+            if (initialFollowersCount > 0) {
+              const followersDifference =
+                latestFollowersCount - initialFollowersCount;
+              growthTrend.followers =
+                (followersDifference / initialFollowersCount) * 100;
+            }
 
-			let createArtistTrend = artistData.map((artist) => {
-				return this.prisma.artistTrending.create({
-					data: {
-						followersCount: artist.followersCount!,
-						tweetsCount: artist.tweetsCount!,
-						recordedAt: new Date().toISOString(),
-						userId: artist.userId!,
-					},
-				});
-			});
+            if (initialTweetsCount > 0) {
+              const tweetsDifference = latestTweetsCount - initialTweetsCount;
+              growthTrend.posts = (tweetsDifference / initialTweetsCount) * 100;
+            }
+          }
+        }
 
-			await Promise.all(createArtistTrend);
-			await Promise.all(artistsProfileUpdate);
-			console.log("All artist profiles updated successfully");
-		} catch (e) {
-			console.log(`Error while trying to update artist profiles: ${e}`);
-		}
-	}
+        return this.prisma.artist.update({
+          where: { userId: artist.userId },
+          data: {
+            followersCount: artist.followersCount,
+            tweetsCount: artist.tweetsCount,
+            images: {
+              avatar: artist.avatar,
+              banner: artist.banner,
+            },
+            bio: artist.biography,
+            website: artist.website,
+            name: artist.name,
+            lastUpdatedAt: new Date().toISOString(),
+            url: artist.url,
+            weeklyFollowersGrowingTrend:
+              growthTrend.followers &&
+              Number.parseFloat(growthTrend.followers.toFixed(3)),
+            weeklyPostsGrowingTrend:
+              growthTrend.posts &&
+              Number.parseFloat(growthTrend.posts.toFixed(3)),
+          },
+        });
+      });
 
-	async updateAnalyticsArtists(totalArtists: number) {
-		try {
-			const totalArtistsRequest = await this.prisma.analyticsArtists.create({
-				data: {
-					totalArtistsCount: totalArtists,
-				},
-			});
+      let createArtistTrend = artistData.map(artist => {
+        return this.prisma.artistTrending.create({
+          data: {
+            followersCount: artist.followersCount!,
+            tweetsCount: artist.tweetsCount!,
+            recordedAt: new Date().toISOString(),
+            userId: artist.userId!,
+          },
+        });
+      });
 
-			if (totalArtistsRequest) {
-				console.log("Artists analytics records successfully created");
-			}
-		} catch (e) {
-			console.log(`Error while trying to create analytics records: ${e}`);
-		}
-	}
+      await Promise.all(createArtistTrend);
+      await Promise.all(artistsProfileUpdate);
+      console.log('All artist profiles updated successfully');
+    } catch (e) {
+      console.log(`Error while trying to update artist profiles: ${e}`);
+    }
+  }
 
-	async updateAnalyticsSuggestions(totalSuggestions: number) {
-		try {
-			const totalSuggestionsRequest =
-				await this.prisma.analyticsSuggestions.create({
-					data: {
-						totalSuggestionsCount: totalSuggestions ?? 0,
-					},
-				});
+  async updateAnalyticsArtists(totalArtists: number) {
+    try {
+      const totalArtistsRequest = await this.prisma.analyticsArtists.create({
+        data: {
+          totalArtistsCount: totalArtists,
+        },
+      });
 
-			if (totalSuggestionsRequest) {
-				console.log("Suggestions analytics records successfully created");
-			}
-		} catch (e) {
-			console.log(`Error while trying to create analytics records: ${e}`);
-		}
-	}
+      if (totalArtistsRequest) {
+        console.log('Artists analytics records successfully created');
+      }
+    } catch (e) {
+      console.log(`Error while trying to create analytics records: ${e}`);
+    }
+  }
+
+  async updateAnalyticsSuggestions(totalSuggestions: number) {
+    try {
+      const totalSuggestionsRequest =
+        await this.prisma.analyticsSuggestions.create({
+          data: {
+            totalSuggestionsCount: totalSuggestions ?? 0,
+          },
+        });
+
+      if (totalSuggestionsRequest) {
+        console.log('Suggestions analytics records successfully created');
+      }
+    } catch (e) {
+      console.log(`Error while trying to create analytics records: ${e}`);
+    }
+  }
 }

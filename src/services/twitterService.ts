@@ -1,5 +1,6 @@
 import { Profile, Scraper } from '@the-convocation/twitter-scraper';
 import { getOriginalUrl, logger } from '../utils';
+import { sendDiscordMessage } from './webhookService';
 
 export class TwitterService {
   private readonly scraper = new Scraper();
@@ -34,6 +35,16 @@ export class TwitterService {
       return profile;
     } catch (e) {
       console.log(e);
+
+      if (e instanceof Error) {
+        sendDiscordMessage(
+          e.name,
+          `${e.message}\n\n\`username: ${username}\``,
+          'error'
+        );
+      } else {
+        sendDiscordMessage('UnknownError', `${e}`, 'error');
+      }
       return undefined;
     }
   }

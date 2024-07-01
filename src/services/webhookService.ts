@@ -1,17 +1,28 @@
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
 
 const hook = new Webhook(process.env.WEBHOOK_URL);
-const IMAGE_URL = 'https://avatars.githubusercontent.com/u/167089128?s=96&v=4';
-
 hook.setUsername('dotcreator');
-hook.setAvatar(IMAGE_URL);
 
-export function sendDiscordMessage(title: string, message: string) {
-  const embed = new MessageBuilder()
-    .setColor('#FA4545')
-    .setTitle(title)
-    .setDescription(message)
-    .setTimestamp();
+export function sendDiscordMessage(
+  title: string,
+  message: string,
+  severity: 'error' | 'info'
+) {
+  let embed: any = {};
+
+  if (severity === 'error') {
+    embed = new MessageBuilder()
+      .setColor('#FA4545')
+      .setTitle(`galatea-${title}`)
+      .setDescription(message)
+      .setTimestamp();
+  } else if (severity === 'info') {
+    embed = new MessageBuilder()
+      .setColor('#FF902B')
+      .setTitle(`galatea-${title}`)
+      .setDescription(message)
+      .setTimestamp();
+  }
 
   hook.send(embed);
 }
