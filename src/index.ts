@@ -5,5 +5,5 @@ import {
 import { logger } from './utils';
 
 logger('Service started.');
-cronUpdateStats();
 cronFetchArtistSuggestion();
+cronUpdateStats();
