@@ -90,11 +90,14 @@ export class SupabaseService {
   async updateArtistProfiles(artistData: Profile[]) {
     try {
       let artistsProfileUpdate = artistData.map(async artist => {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
         const last7DaysTrending = await this.prisma.artistTrending.findMany({
           where: {
             userId: artist.userId,
             recordedAt: {
-              gte: new Date(new Date().setDate(new Date().getDate() - 7)),
+              gte: sevenDaysAgo,
             },
           },
           orderBy: {
@@ -150,12 +153,12 @@ export class SupabaseService {
             name: artist.name,
             lastUpdatedAt: new Date().toISOString(),
             url: artist.url,
-            weeklyFollowersGrowingTrend:
-              growthTrend.followers &&
-              Number.parseFloat(growthTrend.followers.toFixed(3)),
-            weeklyPostsGrowingTrend:
-              growthTrend.posts &&
-              Number.parseFloat(growthTrend.posts.toFixed(3)),
+            weeklyFollowersGrowingTrend: growthTrend.followers
+              ? Number.parseFloat(growthTrend.followers.toFixed(3))
+              : 0,
+            weeklyPostsGrowingTrend: growthTrend.posts
+              ? Number.parseFloat(growthTrend.posts.toFixed(3))
+              : 0,
           },
         });
       });
