@@ -90,19 +90,14 @@ export class SupabaseService {
   async updateArtistProfiles(artistData: Profile[]) {
     try {
       let artistsProfileUpdate = artistData.map(async artist => {
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
         const last7DaysTrending = await this.prisma.artistTrending.findMany({
           where: {
             userId: artist.userId,
-            recordedAt: {
-              gte: sevenDaysAgo,
-            },
           },
           orderBy: {
             recordedAt: 'desc',
           },
+          take: 7,
         });
 
         let growthTrend: {
