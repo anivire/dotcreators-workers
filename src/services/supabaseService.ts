@@ -93,14 +93,11 @@ export class SupabaseService {
         const last7DaysTrending = await this.prisma.artistTrending.findMany({
           where: {
             userId: artist.userId,
-            recordedAt: {
-              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-            },
           },
           orderBy: {
             recordedAt: 'desc',
           },
-          distinct: 'recordedAt',
+          take: 7,
         });
 
         let growthTrend: {
