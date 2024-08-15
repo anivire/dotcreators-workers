@@ -89,6 +89,19 @@ export class SupabaseService {
 
   async updateArtistProfiles(artistData: Profile[]) {
     try {
+      let createArtistTrend = artistData.map(artist => {
+        return this.prisma.artistTrending.create({
+          data: {
+            followersCount: artist.followersCount!,
+            tweetsCount: artist.tweetsCount!,
+            recordedAt: new Date().toISOString(),
+            userId: artist.userId!,
+          },
+        });
+      });
+
+      await Promise.all(createArtistTrend);
+
       let artistsProfileUpdate = artistData.map(async artist => {
         const last7DaysTrending = await this.prisma.artistTrending.findMany({
           where: {
@@ -164,18 +177,6 @@ export class SupabaseService {
         });
       });
 
-      let createArtistTrend = artistData.map(artist => {
-        return this.prisma.artistTrending.create({
-          data: {
-            followersCount: artist.followersCount!,
-            tweetsCount: artist.tweetsCount!,
-            recordedAt: new Date().toISOString(),
-            userId: artist.userId!,
-          },
-        });
-      });
-
-      await Promise.all(createArtistTrend);
       await Promise.all(artistsProfileUpdate);
       console.log('All artist profiles updated successfully');
     } catch (e) {
