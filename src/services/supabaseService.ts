@@ -93,11 +93,14 @@ export class SupabaseService {
         const last7DaysTrending = await this.prisma.artistTrending.findMany({
           where: {
             userId: artist.userId,
+            recordedAt: {
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+            },
           },
           orderBy: {
             recordedAt: 'desc',
           },
-          take: 7,
+          distinct: 'recordedAt',
         });
 
         let growthTrend: {
@@ -109,16 +112,22 @@ export class SupabaseService {
           growthTrend.followers = 0;
           growthTrend.posts = 0;
 
-          const initialTrend = last7DaysTrending[last7DaysTrending.length - 1];
+          const initialTrendIsExists =
+            last7DaysTrending[last7DaysTrending.length - 1];
+          const initialTrend = last7DaysTrending[6];
+          const latestTrend = last7DaysTrending[0];
+
           if (
-            initialTrend &&
+            initialTrendIsExists &&
             artist.followersCount != null &&
-            artist.tweetsCount != null
+            artist.tweetsCount != null &&
+            initialTrend &&
+            latestTrend
           ) {
             const initialFollowersCount = initialTrend.followersCount;
             const initialTweetsCount = initialTrend.tweetsCount;
-            const latestFollowersCount = artist.followersCount;
-            const latestTweetsCount = artist.tweetsCount;
+            const latestFollowersCount = latestTrend.followersCount;
+            const latestTweetsCount = latestTrend.tweetsCount;
 
             if (initialFollowersCount > 0) {
               const followersDifference =
