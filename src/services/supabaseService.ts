@@ -105,7 +105,7 @@ export class SupabaseService {
           posts?: number;
         } = {};
 
-        if (last7DaysTrending.length === 7) {
+        if (last7DaysTrending.length >= 6) {
           growthTrend.followers = 0;
           growthTrend.posts = 0;
 
