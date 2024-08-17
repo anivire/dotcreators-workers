@@ -157,13 +157,14 @@ export class SupabaseService {
               followers: latestTrendData.followersCount,
               tweets: latestTrendData.tweetsCount,
             };
+
             const followersDifference =
               latestTrend.followers - initialTrend.followers;
             growthTrend.followers =
               (followersDifference / initialTrend.followers) * 100;
 
-            const tweetsDifference = latestTrend.tweets - latestTrend.tweets;
-            growthTrend.posts = (tweetsDifference / latestTrend.tweets) * 100;
+            const tweetsDifference = latestTrend.tweets - initialTrend.tweets;
+            growthTrend.posts = (tweetsDifference / initialTrend.tweets) * 100;
           }
         }
 
