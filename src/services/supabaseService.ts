@@ -1,5 +1,6 @@
 import { Artist, ArtistSuggestion, Prisma, PrismaClient } from '@prisma/client';
 import { Profile } from '@the-convocation/twitter-scraper';
+import { logger } from '../utils';
 
 export class SupabaseService {
   private readonly prisma = new PrismaClient();
@@ -59,7 +60,7 @@ export class SupabaseService {
     requestId: string
   ): Promise<boolean> {
     try {
-      // Преобразование `images` в `InputJsonValue`
+      // Transform `images` in `InputJsonValue`
       const artistCreateInput: Prisma.ArtistCreateInput = {
         ...artistData,
         images: artistData.images as Prisma.InputJsonValue,
@@ -87,7 +88,107 @@ export class SupabaseService {
     }
   }
 
-  async updateArtistProfiles(artistData: Profile[]) {
+  async updateArtistsTrendPercent() {
+    try {
+      let page = 1;
+      let artistData: Artist[] = [];
+      let morePages = true;
+
+      logger(`Start artist profiles for update trending percent...`);
+
+      while (morePages) {
+        const recievedProfiles = await this.getArtistsProfilesPaginated(page);
+
+        if (
+          recievedProfiles &&
+          recievedProfiles.data &&
+          recievedProfiles.data.length > 0
+        ) {
+          logger(
+            `Recieved ${recievedProfiles.data.length} artist profiles, merging...`
+          );
+          artistData = artistData.concat(recievedProfiles.data);
+
+          page++;
+        } else {
+          morePages = false;
+        }
+      }
+
+      logger(
+        `Recieved total ${artistData.length} artist profiles, updating trend percent...`
+      );
+
+      let updateProfilePromises = artistData.map(async artist => {
+        logger(`Updating trend for ${artist.userId}@${artist.username}`);
+
+        const weeklyTrends = await this.prisma.artistTrending.findMany({
+          where: {
+            userId: artist.userId,
+          },
+          orderBy: {
+            recordedAt: 'desc',
+          },
+          take: 7,
+        });
+
+        let growthTrend: {
+          followers: number;
+          posts: number;
+        } = { followers: 0, posts: 0 };
+
+        // Update weekly trend percent
+        if (weeklyTrends.length >= 7) {
+          const initialTrendData = weeklyTrends[6];
+          const latestTrendData = weeklyTrends[0];
+
+          if (
+            artist.followersCount != null &&
+            artist.tweetsCount != null &&
+            initialTrendData &&
+            latestTrendData
+          ) {
+            const initialTrend = {
+              followers: initialTrendData.followersCount,
+              tweets: initialTrendData.tweetsCount,
+            };
+
+            const latestTrend = {
+              followers: latestTrendData.followersCount,
+              tweets: latestTrendData.tweetsCount,
+            };
+            const followersDifference =
+              latestTrend.followers - initialTrend.followers;
+            growthTrend.followers =
+              (followersDifference / initialTrend.followers) * 100;
+
+            const tweetsDifference = latestTrend.tweets - latestTrend.tweets;
+            growthTrend.posts = (tweetsDifference / latestTrend.tweets) * 100;
+          }
+        }
+
+        return this.prisma.artist.update({
+          where: { userId: artist.userId },
+          data: {
+            lastUpdatedAt: new Date().toISOString(),
+            weeklyFollowersGrowingTrend: Number.parseFloat(
+              growthTrend.followers.toFixed(3)
+            ),
+            weeklyPostsGrowingTrend: Number.parseFloat(
+              growthTrend.posts.toFixed(3)
+            ),
+          },
+        });
+      });
+
+      await Promise.all(updateProfilePromises);
+      console.log('All artist trends percent data updated successfully');
+    } catch (e) {
+      console.log(`Error while trying to update artist trends: ${e}`);
+    }
+  }
+
+  async createArtistTrends(artistData: Profile[]) {
     try {
       let createArtistTrend = artistData.map(artist => {
         return this.prisma.artistTrending.create({
@@ -101,58 +202,17 @@ export class SupabaseService {
       });
 
       await Promise.all(createArtistTrend);
+      console.log('Succesfully created new artist trends entries');
+    } catch (e) {
+      console.log(
+        `Error while trying to create new artist trends entries: ${e}`
+      );
+    }
+  }
 
+  async updateArtistProfiles(artistData: Profile[]) {
+    try {
       let artistsProfileUpdate = artistData.map(async artist => {
-        const last7DaysTrending = await this.prisma.artistTrending.findMany({
-          where: {
-            userId: artist.userId,
-          },
-          orderBy: {
-            recordedAt: 'desc',
-          },
-          take: 7,
-        });
-
-        let growthTrend: {
-          followers?: number;
-          posts?: number;
-        } = {};
-
-        if (last7DaysTrending.length >= 6) {
-          growthTrend.followers = 0;
-          growthTrend.posts = 0;
-
-          const initialTrendIsExists =
-            last7DaysTrending[last7DaysTrending.length - 1];
-          const initialTrend = last7DaysTrending[6];
-          const latestTrend = last7DaysTrending[0];
-
-          if (
-            initialTrendIsExists &&
-            artist.followersCount != null &&
-            artist.tweetsCount != null &&
-            initialTrend &&
-            latestTrend
-          ) {
-            const initialFollowersCount = initialTrend.followersCount;
-            const initialTweetsCount = initialTrend.tweetsCount;
-            const latestFollowersCount = latestTrend.followersCount;
-            const latestTweetsCount = latestTrend.tweetsCount;
-
-            if (initialFollowersCount > 0) {
-              const followersDifference =
-                latestFollowersCount - initialFollowersCount;
-              growthTrend.followers =
-                (followersDifference / initialFollowersCount) * 100;
-            }
-
-            if (initialTweetsCount > 0) {
-              const tweetsDifference = latestTweetsCount - initialTweetsCount;
-              growthTrend.posts = (tweetsDifference / initialTweetsCount) * 100;
-            }
-          }
-        }
-
         return this.prisma.artist.update({
           where: { userId: artist.userId },
           data: {
@@ -167,12 +227,6 @@ export class SupabaseService {
             name: artist.name,
             lastUpdatedAt: new Date().toISOString(),
             url: artist.url,
-            weeklyFollowersGrowingTrend: growthTrend.followers
-              ? Number.parseFloat(growthTrend.followers.toFixed(3))
-              : 0,
-            weeklyPostsGrowingTrend: growthTrend.posts
-              ? Number.parseFloat(growthTrend.posts.toFixed(3))
-              : 0,
           },
         });
       });

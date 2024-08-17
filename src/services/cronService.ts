@@ -76,6 +76,9 @@ export function cronUpdateStats() {
         logger(`Updating ${artistsNewData.length} profiles...`);
         try {
           await supabase.updateArtistProfiles(artistsNewData);
+          await supabase.createArtistTrends(artistsNewData);
+          await supabase.updateArtistsTrendPercent();
+
           await supabase.updateAnalyticsArtists(artistsNewData.length);
           logger(`Successfully updated ${artistsNewData.length} profiles.`);
           sendDiscordMessage(
