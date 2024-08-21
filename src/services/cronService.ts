@@ -37,7 +37,7 @@ export function cronUpdateStats() {
               );
 
               try {
-                const artistData = await twitter.getTwitterProfile(
+                const artistData = await twitter.getTwitterProfileLegacy(
                   artist.username
                 );
                 if (artistData) {
@@ -143,7 +143,7 @@ export function cronFetchArtistSuggestion() {
               );
 
               try {
-                const artistData = await twitter.getTwitterProfile(
+                const artistData = await twitter.getTwitterProfileLegacy(
                   artist.username
                 );
                 if (artistData) {
