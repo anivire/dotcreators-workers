@@ -73,7 +73,7 @@ export class TwitterService {
         displayName: r.data.user.legacy.name,
         biography: await formatBio(r.data.user.legacy.description),
         website: r.data.user.legacy.entities.url.urls[0].expanded_url,
-        createdAt: r.data.user.legacy.createdAt,
+        createdAt: new Date(r.data.user.legacy.createdAt).toISOString(),
       };
 
       return profile;
@@ -98,7 +98,7 @@ export class TwitterService {
         displayName: r.data.user.legacy.name,
         biography: await formatBio(r.data.user.legacy.description),
         website: r.data.user.legacy.entities.url.urls[0].expanded_url,
-        createdAt: r.data.user.legacy.createdAt,
+        createdAt: new Date(r.data.user.legacy.createdAt).toISOString(),
       };
 
       return profile;
