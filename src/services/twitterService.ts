@@ -1,5 +1,5 @@
 import { Profile, Scraper } from '@the-convocation/twitter-scraper';
-import { getOriginalUrl, logger } from '../utils';
+import { formatBio, getOriginalUrl } from '../utils';
 import { sendDiscordMessage } from './webhookService';
 import { TwitterOpenApi } from 'twitter-openapi-typescript';
 import { ParsedProfile } from '../models/ParsedProfile';
@@ -104,24 +104,4 @@ export class TwitterService {
       return profile;
     }
   }
-}
-
-async function formatBio(bio: string): Promise<string> {
-  const regex = /https?:\/\/(?:www\.|(?!www))[^\s.]+(?:\.[^\s.]+)+(?:\w\/?)*/gi;
-  const matches = bio.match(regex);
-
-  if (matches) {
-    const promises = matches.map(async link => {
-      const originalUrl = await getOriginalUrl(link);
-      return originalUrl || '';
-    });
-
-    let index = 0;
-    const newBioArray = await Promise.all(promises);
-    const processedBio = bio.replace(regex, () => newBioArray[index++] || '');
-
-    return processedBio;
-  }
-
-  return bio;
 }
