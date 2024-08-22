@@ -68,7 +68,10 @@ export class TwitterService {
         followersCount: r.data.user.legacy.normalFollowersCount,
         tweetsCount: r.data.user.legacy.statusesCount,
         url: `https://x.com/${r.data.user.legacy.screenName}`,
-        avatarUrl: r.data.user.legacy.profileImageUrlHttps,
+        avatarUrl: r.data.user.legacy.profileImageUrlHttps.replace(
+          '_normal',
+          ''
+        ),
         bannerUrl: r.data.user.legacy.profileBannerUrl,
         displayName: r.data.user.legacy.name,
         biography: await formatBio(r.data.user.legacy.description),
@@ -93,7 +96,10 @@ export class TwitterService {
         followersCount: r.data.user.legacy.normalFollowersCount,
         tweetsCount: r.data.user.legacy.statusesCount,
         url: `https://x.com/${r.data.user.legacy.screenName}`,
-        avatarUrl: r.data.user.legacy.profileImageUrlHttps,
+        avatarUrl: r.data.user.legacy.profileImageUrlHttps.replace(
+          '_normal',
+          ''
+        ),
         bannerUrl: r.data.user.legacy.profileBannerUrl,
         displayName: r.data.user.legacy.name,
         biography: await formatBio(r.data.user.legacy.description),
