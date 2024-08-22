@@ -75,7 +75,9 @@ export class TwitterService {
         bannerUrl: r.data.user.legacy.profileBannerUrl,
         displayName: r.data.user.legacy.name,
         biography: await formatBio(r.data.user.legacy.description),
-        website: r.data.user.legacy.entities.url.urls[0].expanded_url,
+        website: r.data.user.legacy.entities.url
+          ? r.data.user.legacy.entities.url.urls[0].expanded_url
+          : null,
         createdAt: new Date(r.data.user.legacy.createdAt).toISOString(),
       };
 
@@ -103,7 +105,9 @@ export class TwitterService {
         bannerUrl: r.data.user.legacy.profileBannerUrl,
         displayName: r.data.user.legacy.name,
         biography: await formatBio(r.data.user.legacy.description),
-        website: r.data.user.legacy.entities.url.urls[0].expanded_url,
+        website: r.data.user.legacy.entities.url
+          ? r.data.user.legacy.entities.url.urls[0].expanded_url
+          : null,
         createdAt: new Date(r.data.user.legacy.createdAt).toISOString(),
       };
 
