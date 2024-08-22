@@ -22,3 +22,23 @@ export async function getOriginalUrl(shortenedUrl: string): Promise<string> {
     return shortenedUrl;
   }
 }
+
+export async function formatBio(bio: string): Promise<string> {
+  const regex = /https?:\/\/(?:www\.|(?!www))[^\s.]+(?:\.[^\s.]+)+(?:\w\/?)*/gi;
+  const matches = bio.match(regex);
+
+  if (matches) {
+    const promises = matches.map(async link => {
+      const originalUrl = await getOriginalUrl(link);
+      return originalUrl || '';
+    });
+
+    let index = 0;
+    const newBioArray = await Promise.all(promises);
+    const processedBio = bio.replace(regex, () => newBioArray[index++] || '');
+
+    return processedBio;
+  }
+
+  return bio;
+}

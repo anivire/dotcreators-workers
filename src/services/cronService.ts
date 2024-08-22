@@ -2,8 +2,8 @@ import cron from 'node-cron';
 import { logger } from '../utils';
 import { SupabaseService } from './supabaseService';
 import { TwitterService } from './twitterService';
-import { Profile } from '@the-convocation/twitter-scraper';
 import { sendDiscordMessage } from './webhookService';
+import { ParsedProfile } from '../models/ParsedProfile';
 
 const IS_RUN_ON_INIT = process.env.RUN_ON_INIT;
 
@@ -19,7 +19,7 @@ export function cronUpdateStats() {
     async () => {
       logger(`Start fetching artists profiles...`);
       let page = 1;
-      let artistsNewData: Profile[] = [];
+      let artistsNewData: ParsedProfile[] = [];
       let morePages = true;
 
       while (morePages) {
@@ -37,8 +37,8 @@ export function cronUpdateStats() {
               );
 
               try {
-                const artistData = await twitter.getTwitterProfile(
-                  artist.username
+                const artistData = await twitter.getTwitterProfileById(
+                  artist.userId
                 );
                 if (artistData) {
                   artistsNewData.push(artistData);
@@ -78,8 +78,8 @@ export function cronUpdateStats() {
           await supabase.updateArtistProfiles(artistsNewData);
           await supabase.createArtistTrends(artistsNewData);
           await supabase.updateArtistsTrendPercent();
-
           await supabase.updateAnalyticsArtists(artistsNewData.length);
+
           logger(`Successfully updated ${artistsNewData.length} profiles.`);
           sendDiscordMessage(
             'Update user profiles and trends',
@@ -143,7 +143,7 @@ export function cronFetchArtistSuggestion() {
               );
 
               try {
-                const artistData = await twitter.getTwitterProfile(
+                const artistData = await twitter.getTwitterProfileByUsername(
                   artist.username
                 );
                 if (artistData) {
@@ -161,15 +161,13 @@ export function cronFetchArtistSuggestion() {
                       followersCount: artistData.followersCount || 0,
                       tweetsCount: artistData.tweetsCount || 0,
                       images: {
-                        avatar: artistData.avatar || null,
-                        banner: artistData.banner || null,
+                        avatar: artistData.avatarUrl || null,
+                        banner: artistData.bannerUrl || null,
                       },
-                      name: artistData.name || null,
-                      url:
-                        artistData.url ||
-                        'https://x.com/' + artistData.username,
+                      name: artistData.displayName || null,
+                      url: artistData.url,
                       website: artistData.website || null,
-                      joinedAt: new Date(artistData.joined!) || null,
+                      joinedAt: new Date(artistData.createdAt) || null,
                       username: artistData.username!,
                       userId: artistData.userId!,
                       lastUpdatedAt: new Date(),

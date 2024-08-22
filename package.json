@@ -23,6 +23,7 @@
     "node-cron": "^3.0.3",
     "prisma": "^5.14.0",
     "ts-node": "^10.9.2",
+    "twitter-openapi-typescript": "^0.0.34",
     "typescript": "^5.4.5"
   },
   "devDependencies": {

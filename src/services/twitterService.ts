@@ -1,13 +1,19 @@
 import { Profile, Scraper } from '@the-convocation/twitter-scraper';
-import { getOriginalUrl, logger } from '../utils';
+import { formatBio, getOriginalUrl } from '../utils';
 import { sendDiscordMessage } from './webhookService';
+import { TwitterOpenApi } from 'twitter-openapi-typescript';
+import { ParsedProfile } from '../models/ParsedProfile';
 
 export class TwitterService {
   private readonly scraper = new Scraper();
+  private readonly api = new TwitterOpenApi();
 
-  async getTwitterProfile(username: string): Promise<Profile | undefined> {
+  async getTwitterProfileLegacy(
+    username: string
+  ): Promise<Profile | undefined> {
     try {
       let profile = await this.scraper.getProfile(username);
+
       if (profile.biography) {
         const regex =
           /https?:\/\/(?:www\.|(?!www))[^\s.]+(?:\.[^\s.]+)+(?:\w\/?)*/gi;
@@ -48,13 +54,64 @@ export class TwitterService {
       return undefined;
     }
   }
-}
 
-export async function test() {
-  const t = new TwitterService();
-  try {
-    console.log(await t.getTwitterProfile('MortMort_'));
-  } catch (e) {
-    console.log(e);
+  async getTwitterProfileByUsername(username: string) {
+    const twitterClient = await this.api.getGuestClient();
+    const r = await twitterClient
+      .getUserApi()
+      .getUserByScreenName({ screenName: username });
+
+    if (r && r.data && r.data.user) {
+      const profile: ParsedProfile = {
+        userId: r.data.user.restId,
+        username: r.data.user.legacy.screenName,
+        followersCount: r.data.user.legacy.normalFollowersCount,
+        tweetsCount: r.data.user.legacy.statusesCount,
+        url: `https://x.com/${r.data.user.legacy.screenName}`,
+        avatarUrl: r.data.user.legacy.profileImageUrlHttps.replace(
+          '_normal',
+          ''
+        ),
+        bannerUrl: r.data.user.legacy.profileBannerUrl,
+        displayName: r.data.user.legacy.name,
+        biography: await formatBio(r.data.user.legacy.description),
+        website: r.data.user.legacy.entities.url
+          ? r.data.user.legacy.entities.url.urls[0].expanded_url
+          : null,
+        createdAt: new Date(r.data.user.legacy.createdAt).toISOString(),
+      };
+
+      return profile;
+    }
+  }
+
+  async getTwitterProfileById(userId: string) {
+    const twitterClient = await this.api.getGuestClient();
+    const r = await twitterClient
+      .getUserApi()
+      .getUserByRestId({ userId: userId });
+
+    if (r && r.data && r.data.user) {
+      const profile: ParsedProfile = {
+        userId: r.data.user.restId,
+        username: r.data.user.legacy.screenName,
+        followersCount: r.data.user.legacy.normalFollowersCount,
+        tweetsCount: r.data.user.legacy.statusesCount,
+        url: `https://x.com/${r.data.user.legacy.screenName}`,
+        avatarUrl: r.data.user.legacy.profileImageUrlHttps.replace(
+          '_normal',
+          ''
+        ),
+        bannerUrl: r.data.user.legacy.profileBannerUrl,
+        displayName: r.data.user.legacy.name,
+        biography: await formatBio(r.data.user.legacy.description),
+        website: r.data.user.legacy.entities.url
+          ? r.data.user.legacy.entities.url.urls[0].expanded_url
+          : null,
+        createdAt: new Date(r.data.user.legacy.createdAt).toISOString(),
+      };
+
+      return profile;
+    }
   }
 }

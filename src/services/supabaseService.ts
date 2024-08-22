@@ -1,6 +1,6 @@
 import { Artist, ArtistSuggestion, Prisma, PrismaClient } from '@prisma/client';
-import { Profile } from '@the-convocation/twitter-scraper';
 import { logger } from '../utils';
+import { ParsedProfile } from '../models/ParsedProfile';
 
 export class SupabaseService {
   private readonly prisma = new PrismaClient();
@@ -189,7 +189,7 @@ export class SupabaseService {
     }
   }
 
-  async createArtistTrends(artistData: Profile[]) {
+  async createArtistTrends(artistData: ParsedProfile[]) {
     try {
       let createArtistTrend = artistData.map(artist => {
         return this.prisma.artistTrending.create({
@@ -211,7 +211,7 @@ export class SupabaseService {
     }
   }
 
-  async updateArtistProfiles(artistData: Profile[]) {
+  async updateArtistProfiles(artistData: ParsedProfile[]) {
     try {
       let artistsProfileUpdate = artistData.map(async artist => {
         return this.prisma.artist.update({
@@ -220,12 +220,12 @@ export class SupabaseService {
             followersCount: artist.followersCount,
             tweetsCount: artist.tweetsCount,
             images: {
-              avatar: artist.avatar,
-              banner: artist.banner,
+              avatar: artist.avatarUrl,
+              banner: artist.bannerUrl,
             },
             bio: artist.biography,
             website: artist.website,
-            name: artist.name,
+            name: artist.displayName,
             lastUpdatedAt: new Date().toISOString(),
             url: artist.url,
           },
